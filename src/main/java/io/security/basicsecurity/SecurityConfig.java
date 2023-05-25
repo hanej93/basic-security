@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 
 import jakarta.servlet.http.HttpSession;
@@ -12,6 +13,12 @@ import jakarta.servlet.http.HttpSession;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+	private final UserDetailsService userDetailsService;
+
+	public SecurityConfig(UserDetailsService userDetailsService) {
+		this.userDetailsService = userDetailsService;
+	}
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -54,6 +61,14 @@ public class SecurityConfig {
 						response.sendRedirect("/login");
 					})
 					.deleteCookies("remember-me");
+			});
+
+		http
+			.rememberMe(httpSecurityRememberMeConfigurer -> {
+				httpSecurityRememberMeConfigurer
+					.rememberMeParameter("remember")
+					.tokenValiditySeconds(3600)
+					.userDetailsService(userDetailsService);
 			});
 
 		return http.build();
