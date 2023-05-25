@@ -20,7 +20,24 @@ public class SecurityConfig {
 			});
 
 		http
-			.formLogin(Customizer.withDefaults());
+			.formLogin(httpSecurityFormLoginConfigurer -> {
+				httpSecurityFormLoginConfigurer
+					// .loginPage("/loginPage")
+					.defaultSuccessUrl("/")
+					.failureUrl("/login")
+					.usernameParameter("userId")
+					.passwordParameter("passwd")
+					.loginProcessingUrl("/login_proc")
+					.successHandler((request, response, authentication) -> {
+						System.out.println("authentication = " + authentication.getName());
+						response.sendRedirect("/");
+					})
+					.failureHandler((request, response, exception) -> {
+						System.out.println("exception = " + exception.getMessage());
+						response.sendRedirect("/login");
+					})
+					.permitAll();
+			});
 
 		return http.build();
 	}
