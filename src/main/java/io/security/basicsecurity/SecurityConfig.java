@@ -7,6 +7,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
+import jakarta.servlet.http.HttpSession;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -37,6 +39,21 @@ public class SecurityConfig {
 						response.sendRedirect("/login");
 					})
 					.permitAll();
+			});
+
+		http
+			.logout(httpSecurityLogoutConfigurer -> {
+				httpSecurityLogoutConfigurer
+					.logoutUrl("/logout")
+					.logoutSuccessUrl("/login")
+					.addLogoutHandler((request, response, authentication) -> {
+						HttpSession session = request.getSession();
+						session.invalidate();
+					})
+					.logoutSuccessHandler((request, response, authentication) -> {
+						response.sendRedirect("/login");
+					})
+					.deleteCookies("remember-me");
 			});
 
 		return http.build();
