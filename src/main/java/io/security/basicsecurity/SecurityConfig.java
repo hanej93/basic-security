@@ -71,6 +71,14 @@ public class SecurityConfig {
 					.userDetailsService(userDetailsService);
 			});
 
+		http
+			.sessionManagement(httpSecuritySessionManagementConfigurer -> {
+				httpSecuritySessionManagementConfigurer
+					// .sessionFixation().changeSessionId() // 기본값
+					.maximumSessions(1)
+					.maxSessionsPreventsLogin(false);
+			});
+
 		return http.build();
 	}
 
