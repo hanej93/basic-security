@@ -2,11 +2,14 @@ package io.security.basicsecurity;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -14,10 +17,27 @@ import jakarta.servlet.http.HttpSession;
 @EnableWebSecurity
 public class SecurityConfig {
 
-	private final UserDetailsService userDetailsService;
+	@Bean
+	public UserDetailsService userDetailsService() {
+		UserDetails user = User.builder()
+			.username("user")
+			.password("{noop}1234")
+			.roles("USER")
+			.build();
 
-	public SecurityConfig(UserDetailsService userDetailsService) {
-		this.userDetailsService = userDetailsService;
+		UserDetails sys = User.builder()
+			.username("sys")
+			.password("{noop}1234")
+			.roles("SYS")
+			.build();
+
+		UserDetails admin = User.builder()
+			.username("admin")
+			.password("{noop}1234")
+			.roles("ADMIN", "SYS", "USER")
+			.build();
+
+		return new InMemoryUserDetailsManager( user, sys, admin );
 	}
 
 	@Bean
@@ -25,6 +45,9 @@ public class SecurityConfig {
 		http
 			.authorizeHttpRequests(authorizationManagerRequestMatcherRegistry -> {
 				authorizationManagerRequestMatcherRegistry
+					.requestMatchers("/user").hasRole("USER")
+					.requestMatchers("/admin/pay").hasRole("ADMIN")
+					.requestMatchers("/admin/**").access(new WebExpressionAuthorizationManager("hasRole('ADMIN') or hasRole('SYS')"))
 					.anyRequest().authenticated();
 			});
 
@@ -68,13 +91,14 @@ public class SecurityConfig {
 				httpSecurityRememberMeConfigurer
 					.rememberMeParameter("remember")
 					.tokenValiditySeconds(3600)
-					.userDetailsService(userDetailsService);
+					.userDetailsService(userDetailsService());
 			});
 
 		http
 			.sessionManagement(httpSecuritySessionManagementConfigurer -> {
 				httpSecuritySessionManagementConfigurer
 					// .sessionFixation().changeSessionId() // 기본값
+					// .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // 기본값
 					.maximumSessions(1)
 					.maxSessionsPreventsLogin(false);
 			});
