@@ -10,6 +10,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -61,8 +64,12 @@ public class SecurityConfig {
 					.passwordParameter("passwd")
 					.loginProcessingUrl("/login_proc")
 					.successHandler((request, response, authentication) -> {
+						RequestCache requestCache = new HttpSessionRequestCache();
+						SavedRequest savedRequest = requestCache.getRequest(request, response);
+						String redirectUrl = savedRequest.getRedirectUrl();
 						System.out.println("authentication = " + authentication.getName());
-						response.sendRedirect("/");
+						System.out.println("redirectUrl = " + redirectUrl);
+						response.sendRedirect(redirectUrl);
 					})
 					.failureHandler((request, response, exception) -> {
 						System.out.println("exception = " + exception.getMessage());
@@ -101,6 +108,19 @@ public class SecurityConfig {
 					// .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // 기본값
 					.maximumSessions(1)
 					.maxSessionsPreventsLogin(false);
+			});
+
+		http
+			.exceptionHandling(httpSecurityExceptionHandlingConfigurer -> {
+				httpSecurityExceptionHandlingConfigurer
+					// .authenticationEntryPoint((request, response, authException) -> {
+					// 	System.out.println("authenticationEntryPoint");
+					// 	response.sendRedirect("/login");
+					// })
+					.accessDeniedHandler((request, response, accessDeniedException) -> {
+						System.out.println("accessDeniedHandler");
+						response.sendRedirect("/denied");
+					});
 			});
 
 		return http.build();
